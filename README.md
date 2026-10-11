@@ -66,6 +66,10 @@ Original:  subs r0, #0x4D     0x16DC - 0x62 - 0x4D = 0x162D   (wrong)
 Patched:   subs r0, #0x8B     0x16DC - 0x62 - 0x8B = 0x15EF   (correct)
 ```
 
+The bug and the fix both come from Scrub Busta's 2022 video
+[Fixing Konami's BIGGEST Mistake](https://www.youtube.com/watch?v=rKUE2M25_dA), where he works
+out the card ID correction using a ROM dump. This patch applies it to the USA release.
+
 Only the immediate byte at file offset `0x00020FC2` is changed.
 
 ---
@@ -185,6 +189,9 @@ File offset `0x00020FC2` maps to GBA address `0x08020FC2`, inside the Thumb func
 `gEngineEffectGraveyardBanish_08020FA8`. That function derives several card IDs from constants; in
 the Huge Revolution path it starts at `0x16DC`, subtracts `0x62`, then hits the instruction above.
 
+The corrected immediate value comes from Scrub Busta's video; the file offset, function label, and
+surrounding arithmetic were located here using the disassembly.
+
 ```text
 4D 38    subs r0, #0x4D     ->  wrong ID
 8B 38    subs r0, #0x8B     ->  0x15EF, correct
@@ -220,8 +227,11 @@ game's ROM size and save hardware. Existing saves remain valid.
 
 ## Credits
 
+- [Scrub Busta](https://www.youtube.com/watch?v=rKUE2M25_dA) — found the Huge Revolution card ID
+  bug and worked out the fix. The Huge Revolution half of this patch comes entirely from that
+  video; it would not exist without it.
 - [`testyourmine/ygowct06`](https://github.com/testyourmine/ygowct06) — the disassembly that made
-  the region/language logic, artwork table, and Huge Revolution instruction identifiable.
+  the region/language logic and artwork table identifiable.
 - Project page and screenshots: **<https://rainear.net/Yu-Gi-Oh-Ultimate-Masters-2006>**
 
 ## Legal
