@@ -8,7 +8,7 @@ A BPS patch for the USA release of **Yu-Gi-Oh! Ultimate Masters: World Champions
 1. Uses the **uncensored Japanese card artwork** in every region and language mode.
 2. **Fixes the Huge Revolution challenge** logic, which was referencing the wrong internal card ID.
 
-The patch modifies **91 bytes** out of a 32 MiB game. Nothing is added, removed, recompressed, or
+The patch modifies **236 bytes** out of a 32 MiB game. Nothing is added, removed, recompressed, or
 relocated — the uncensored artwork is already inside your ROM, the game is simply selecting the
 censored versions of it.
 
@@ -21,10 +21,10 @@ censored versions of it.
 
 | File | Size | What it is |
 | --- | --- | --- |
-| `Yu-Gi-Oh-Ultimate-Masters-2006-Uncensored-v1.0.bps` | 351 bytes | The patch. Apply this with [Floating IPS](https://www.smwcentral.net/?p=viewthread&t=88029). |
+| `Yu-Gi-Oh-Ultimate-Masters-2006-Uncensored-v1.0.bps` | 853 bytes | The patch. Apply this with [Floating IPS](https://www.smwcentral.net/?p=viewthread&t=88029). |
 | `patch_rom.py` | 3.7 KiB | Optional standalone Python patcher that performs the same changes directly. |
 
-Patch SHA-256: `642E19B2C2C6F5C8E1FF64D7FE8129A73FC7839F817A81231B57378A93AF83AA`
+Patch SHA-256: `B862A6664F27775FA5D94FC78FCD4DE07DA359D3AECB928E011A3A3F19D43AC7`
 
 ---
 
@@ -36,8 +36,8 @@ Every card-art index in the shared selection table holds a **pair** of entries: 
 uncensored artwork and the international censored artwork. The game picks between them at runtime
 based on the ROM's region byte and the selected language.
 
-Of 800 pairs, 710 already pointed at the same asset in both modes. The remaining **90** pointed at
-different artwork. This patch repoints those 90 international entries at the Japanese variants
+Of 2,098 pairs, 1,865 already pointed at the same asset in both modes. The remaining **233** pointed
+at different artwork. This patch repoints those 233 international entries at the Japanese variants
 already stored in the game, so the uncensored art is used no matter which of the game's six
 languages is selected.
 
@@ -52,6 +52,7 @@ Examples of what changes:
 | **Water Omotics** | International artwork adds clothing that is absent from the original Japanese illustration. |
 | **Harpie Lady** | The original clothing and body details from the Japanese artwork are restored. |
 | **Forbidden One pieces** | Different limbs, same censorship edit — the international Spellbinding Circle background is replaced with the original pentagram. |
+| **Elemental Hero Burstinatrix** | The international clothing edit is replaced with the original Japanese illustration. |
 
 Full side-by-side screenshots are available on the project page:
 **<https://rainear.net/Yu-Gi-Oh-Ultimate-Masters-2006>**
@@ -101,12 +102,13 @@ The patch embeds the source checksum, so it will refuse to apply to the wrong RO
 Requires Python 3.10 or newer and uses only the standard library.
 
 ```powershell
-python patch_rom.py "clean-rom.gba" "patched-rom.gba"
+python patch_rom.py "clean-rom.gba"
 ```
 
-Omit the second path to generate an automatic output filename. The patcher validates the ROM size,
-SHA-1, artwork table, and Huge Revolution byte before writing anything, and it refuses to overwrite
-your clean input ROM. Add `--force` only when you intend to replace an existing output file.
+This creates `clean-rom (Uncensored + Huge Revolution Fix).gba` beside the clean input. Pass a second
+path to choose a different output filename. The patcher validates the ROM size, SHA-1, artwork table,
+and Huge Revolution byte before writing anything, and it refuses to overwrite your clean input ROM.
+Add `--force` only when you intend to replace an existing output file.
 
 ---
 
@@ -128,8 +130,8 @@ The patch applies **only** to this exact ROM.
 
 | Property | Value |
 | --- | --- |
-| Patched SHA-1 | `63C8F98B2A295ED7F24E2CC08659F3B260693EEA` |
-| Patched SHA-256 | `4A7BC0E58B8CA2C0BF171841214734B88DE73EC5A3C04768E5EB2C8E3087CE78` |
+| Patched SHA-1 | `A8D79DFF3EB3660E4BFC1ECBC5763CC75F7A3E06` |
+| Patched SHA-256 | `8DDAEBE7032BDC0A342494DCC85676310B50F00A6F38BE5B2A8F68B7517AF02A` |
 | GBA header checksum | `0x9D` (unchanged) |
 
 ---
@@ -168,10 +170,11 @@ gCardArtIndexes[card_art_index * 2 + variant]
 | --- | --- |
 | GBA address | `0x095B5C00` |
 | ROM file offset | `0x015B5C00` |
-| Table size | `0x0C82` bytes |
+| Logical table size | `0x20C8` bytes |
+| ROM file end offset | `0x015B7CC8` (exclusive) |
 | Entry format | Little-endian unsigned 16-bit integers |
-| Pairs examined | `800` |
-| Pairs that differed | `90` |
+| Pairs examined | `2,098` |
+| Pairs that differed | `233` |
 
 For every differing pair, the international entry is overwritten with the value from its Japanese
 entry:
@@ -182,6 +185,10 @@ international_art_index = japanese_art_index
 
 This only changes *which* existing assets the game selects. No graphics were imported, replaced,
 recompressed, or moved.
+
+Elemental Hero Burstinatrix is internal card ID `1814`. Its pair at file offset `0x015B7858`
+changes from `(2018, 2019)` to `(2018, 2018)`, redirecting the international slot to the existing
+uncensored artwork.
 
 ### The Huge Revolution instruction
 
@@ -205,11 +212,12 @@ The patched ROM was compared byte-for-byte against the clean input.
 | --- | --- |
 | Original ROM unchanged | Passed |
 | Input and output sizes equal | Passed (both `33,554,432` bytes) |
-| Differing artwork mappings patched | Passed (`90`) |
-| All 800 artwork pairs now match | Passed |
+| Differing artwork mappings patched | Passed (`233`) |
+| All 2,098 artwork pairs now match | Passed |
+| Burstinatrix pair is `(2018, 2018)` | Passed |
 | Huge Revolution byte is `0x8B` | Passed |
 | Changes outside expected locations | `0` |
-| Total changed bytes | `91` |
+| Total changed bytes | `236` |
 | Internal game code remains `BY6E` | Passed |
 | Stored GBA header checksum | `0x9D` |
 | Recalculated GBA header checksum | `0x9D` |
